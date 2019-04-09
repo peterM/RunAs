@@ -1,8 +1,10 @@
-﻿// MIT License
+extensions: designer.cs generated.cs
+extensions: .cs
+// MIT License
 //
 // Copyright (c) 2019 Peter M.
 // 
-// File: LogonFlags.cs 
+// File: %FileName% 
 // Company: MalikP.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,15 +24,3 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
-using System;
-
-namespace MalikP.RunAs.Win32Api
-{
-    [Flags]
-    public enum LogonFlags
-    {
-        LOGON_WITH_PROFILE = 0x00000001,
-        LOGON_NETCREDENTIALS_ONLY = 0x00000002
-    }
-}
