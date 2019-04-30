@@ -23,3 +23,7 @@ MalikP.RunAs.exe userName domain password "command"
 ### Planned
 
 - enccrypt password saved in configuration file
+
+#### Repository
+
+[https://github.com/peterM/RunAs](https://github.com/peterM/RunAs)
