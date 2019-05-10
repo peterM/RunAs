@@ -47,7 +47,7 @@ MalikP.RunAs.exe userName domain password "command" True "C:\Windows\System32\Wi
 
 - _For powershell v.6_
 ```powershell
-MalikP.RunAs.exe userName domain password "command" True "C:\Program Files\PowerShell\6\pwsh.exe" "-command"
+MalikP.RunAs.exe userName domain password "command" True "C:\Program Files\PowerShell\6\pwsh.exe" "-NoProfile -Command"
 ```
 
 - _For command prompt_
