@@ -24,7 +24,6 @@
 // SOFTWARE.
 
 using System;
-using System.Configuration;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -34,19 +33,7 @@ namespace MalikP.RunAs
 {
     class Program
     {
-        private static string UserName { get; set; } = ConfigurationManager.AppSettings[nameof(UserName)];
-
-        private static string Domain { get; set; } = ConfigurationManager.AppSettings[nameof(Domain)];
-
-        private static string Password { get; set; } = ConfigurationManager.AppSettings[nameof(Password)];
-
-        private static string Command { get; set; } = ConfigurationManager.AppSettings[nameof(Command)];
-
-        private static bool UseCustomCommandExecutor { get; set; } = bool.Parse((ConfigurationManager.AppSettings[nameof(UseCustomCommandExecutor)] ?? "false"));
-
-        private static string CustomCommandExecutor { get; set; } = ConfigurationManager.AppSettings[nameof(CustomCommandExecutor)];
-
-        private static string CommandArgument { get; set; } = ConfigurationManager.AppSettings[nameof(CommandArgument)];
+        private static readonly Settings _settings = new Settings();
 
         static void Main(string[] args)
         {
@@ -54,30 +41,29 @@ namespace MalikP.RunAs
             // "C:\Windows\System32\dsa.msc /domain=something.local"
             if (args.Length >= 4)
             {
-                UserName = args[0];
-                Domain = args[1];
-                Password = args[2];
-                Command = args[3];
+                _settings.UserName = args[0];
+                _settings.Domain = args[1];
+                _settings.Password = args[2];
+                _settings.Command = args[3];
 
                 if (args.Length == 7)
                 {
-                    UseCustomCommandExecutor = bool.Parse(args[4]);
-                    CustomCommandExecutor = args[5];
-                    CommandArgument = args[6];
+                    _settings.UseCustomCommandExecutor = bool.Parse(args[4]);
+                    _settings.CustomCommandExecutor = args[5];
+                    _settings.CommandArgument = args[6];
                 }
             }
 
             StartupInfo startupInfo = new StartupInfo
             {
                 cb = Marshal.SizeOf(typeof(StartupInfo)),
-                title = $"Impersonated command prompt - [{Domain}\\{UserName}]"
+                title = $"Impersonated command prompt - [{_settings.Domain}\\{_settings.UserName}]"
             };
 
-            string appFileName, arguments;
-            SetupCommand(out appFileName, out arguments);
+            RunAsContext runAsContext = SetupRunAsContext(_settings);
 
             ProcessInfo processInfo = new ProcessInfo();
-            if (Win32Wrapper.CreateProcessWithLogonW(UserName, Domain, Password, LogonFlags.LOGON_NETCREDENTIALS_ONLY, appFileName, arguments, 0, IntPtr.Zero, null, ref startupInfo, out processInfo))
+            if (Win32Wrapper.CreateProcessWithLogonW(_settings.UserName, _settings.Domain, _settings.Password, LogonFlags.LOGON_NETCREDENTIALS_ONLY, runAsContext.Executor, runAsContext.Command, 0, IntPtr.Zero, null, ref startupInfo, out processInfo))
             {
                 Win32Wrapper.CloseHandle(processInfo.hProcess);
                 Win32Wrapper.CloseHandle(processInfo.hThread);
@@ -92,16 +78,18 @@ namespace MalikP.RunAs
             }
         }
 
-        private static void SetupCommand(out string appFileName, out string arguments)
+        private static RunAsContext SetupRunAsContext(Settings settings)
         {
-            appFileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-            arguments = String.Format("/c \"{0}\"", Command);
+            string appFileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            string arguments = String.Format("/c \"{0}\"", settings.Command);
 
-            if (UseCustomCommandExecutor)
+            if (settings.UseCustomCommandExecutor)
             {
-                appFileName = CustomCommandExecutor;
-                arguments = String.Format("{0} \"{1}\"", CommandArgument, Command);
+                appFileName = settings.CustomCommandExecutor;
+                arguments = String.Format("{0} \"{1}\"", settings.CommandArgument, settings.Command);
             }
+
+            return new RunAsContext(appFileName, arguments);
         }
     }
 }

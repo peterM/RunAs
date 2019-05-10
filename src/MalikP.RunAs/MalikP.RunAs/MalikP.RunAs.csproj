@@ -47,6 +47,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="RunAsContext.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="Win32Api\CreationFlags.cs" />
     <Compile Include="Win32Api\LogonFlags.cs" />
     <Compile Include="Win32Api\ProcessInfo.cs" />

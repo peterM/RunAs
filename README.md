@@ -12,17 +12,42 @@ This is `runas.exe /netonly .....` replacement to provide support to inject pass
 
 #### Configuration file
 Open `MalikP.RunAs.exe.config` and update `key` values:
-- `CloseHost` [True|False] - _optional_
 - `UserName`
 - `Domain`
 - `Password`
 - `Command`
+- `UseCustomCommandExecutor` [True|False] - _optional_
+- `CustomCommandExecutor`
+- `CommandArgument`
 
 Or run executable with arguments **(order is mandatory)**:
 
 ```powershell
 MalikP.RunAs.exe userName domain password "command"
-MalikP.RunAs.exe userName domain password "command" closeHost
+MalikP.RunAs.exe userName domain password "command" UseCustomCommandExecutor CustomCommandExecutor CommandArgument
+```
+
+### Execution using command prompt
+
+```powershell
+MalikP.RunAs.exe userName domain password "command"
+```
+
+### Execution using powershell or other custom executor
+```powershell
+MalikP.RunAs.exe userName domain password "command" UseCustomCommandExecutor CustomCommandExecutor CommandArgument
+```
+
+**Example:**
+
+- _For powershell_
+```powershell
+MalikP.RunAs.exe userName domain password "command" True "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" "-command"
+```
+
+- _For powershell v.6_
+```powershell
+MalikP.RunAs.exe userName domain password "command" True "C:\Program Files\PowerShell\6\pwsh.exe" "-command"
 ```
 
 ### Planned
