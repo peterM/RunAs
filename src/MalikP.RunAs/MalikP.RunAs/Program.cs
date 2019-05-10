@@ -25,6 +25,7 @@
 
 using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -40,15 +41,21 @@ namespace MalikP.RunAs
             string domain = ConfigurationManager.AppSettings["Domain"];
             string password = ConfigurationManager.AppSettings["Password"];
             string command = ConfigurationManager.AppSettings["Command"];
+            bool closeHost = bool.Parse((ConfigurationManager.AppSettings["CloseHost"] ?? "false"));
 
             //Example: 
             // "C:\Windows\System32\dsa.msc /domain=something.local"
-            if (args.Length == 4)
+            if (args.Length >= 4)
             {
                 userName = args[0];
                 domain = args[1];
                 password = args[2];
                 command = args[3];
+
+                if (args.Length >= 5)
+                {
+                    closeHost = bool.Parse(args[4]);
+                }
             }
 
             StartupInfo startupInfo = new StartupInfo
@@ -65,11 +72,31 @@ namespace MalikP.RunAs
             {
                 Win32Wrapper.CloseHandle(processInfo.hProcess);
                 Win32Wrapper.CloseHandle(processInfo.hThread);
+
+                if (closeHost)
+                {
+                    CloseHostProcess(processInfo);
+                }
             }
             else
             {
                 string errorString = Marshal.GetLastWin32Error().ToString();
                 Console.WriteLine(errorString);
+            }
+        }
+
+        private static void CloseHostProcess(ProcessInfo processInfo)
+        {
+            try
+            {
+                Process process = Process.GetProcessById((int)processInfo.dwProcessId);
+                process?.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                Console.WriteLine("\n\n\nPress any key to continue ...");
+                Console.ReadKey();
             }
         }
     }
