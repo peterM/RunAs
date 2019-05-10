@@ -50,6 +50,11 @@ MalikP.RunAs.exe userName domain password "command" True "C:\Windows\System32\Wi
 MalikP.RunAs.exe userName domain password "command" True "C:\Program Files\PowerShell\6\pwsh.exe" "-command"
 ```
 
+- _For command prompt_
+```powershell
+MalikP.RunAs.exe userName domain password "command" True "C:\Windows\System32cmd.exe" "/c"
+```
+
 ### Planned
 
 - enccrypt password saved in configuration file
