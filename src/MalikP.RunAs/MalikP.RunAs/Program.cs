@@ -24,8 +24,6 @@
 // SOFTWARE.
 
 using System;
-using System.Configuration;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -35,69 +33,63 @@ namespace MalikP.RunAs
 {
     class Program
     {
+        private static readonly Settings _settings = new Settings();
+
         static void Main(string[] args)
         {
-            string userName = ConfigurationManager.AppSettings["UserName"];
-            string domain = ConfigurationManager.AppSettings["Domain"];
-            string password = ConfigurationManager.AppSettings["Password"];
-            string command = ConfigurationManager.AppSettings["Command"];
-            bool closeHost = bool.Parse((ConfigurationManager.AppSettings["CloseHost"] ?? "false"));
-
             //Example: 
             // "C:\Windows\System32\dsa.msc /domain=something.local"
             if (args.Length >= 4)
             {
-                userName = args[0];
-                domain = args[1];
-                password = args[2];
-                command = args[3];
+                _settings.UserName = args[0];
+                _settings.Domain = args[1];
+                _settings.Password = args[2];
+                _settings.Command = args[3];
 
-                if (args.Length >= 5)
+                if (args.Length == 7)
                 {
-                    closeHost = bool.Parse(args[4]);
+                    _settings.UseCustomCommandExecutor = bool.Parse(args[4]);
+                    _settings.CustomCommandExecutor = args[5];
+                    _settings.CommandArgument = args[6];
                 }
             }
 
             StartupInfo startupInfo = new StartupInfo
             {
                 cb = Marshal.SizeOf(typeof(StartupInfo)),
-                title = $"Impersonated command prompt - [{domain}\\{userName}]"
+                title = $"Impersonated command prompt - [{_settings.Domain}\\{_settings.UserName}]"
             };
 
-            string appFileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-            string arguments = String.Format("/c \"{0}\"", command);
+            RunAsContext runAsContext = SetupRunAsContext(_settings);
 
             ProcessInfo processInfo = new ProcessInfo();
-            if (Win32Wrapper.CreateProcessWithLogonW(userName, domain, password, LogonFlags.LOGON_NETCREDENTIALS_ONLY, appFileName, arguments, 0, IntPtr.Zero, null, ref startupInfo, out processInfo))
+            if (Win32Wrapper.CreateProcessWithLogonW(_settings.UserName, _settings.Domain, _settings.Password, LogonFlags.LOGON_NETCREDENTIALS_ONLY, runAsContext.Executor, runAsContext.Command, 0, IntPtr.Zero, null, ref startupInfo, out processInfo))
             {
                 Win32Wrapper.CloseHandle(processInfo.hProcess);
                 Win32Wrapper.CloseHandle(processInfo.hThread);
-
-                if (closeHost)
-                {
-                    CloseHostProcess(processInfo);
-                }
             }
             else
             {
                 string errorString = Marshal.GetLastWin32Error().ToString();
                 Console.WriteLine(errorString);
+
+                Console.WriteLine("\n\nPress any key to continue...");
+                Console.ReadKey();
             }
         }
 
-        private static void CloseHostProcess(ProcessInfo processInfo)
+        private static RunAsContext SetupRunAsContext(Settings settings)
         {
-            try
+            string appFileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            string arguments = String.Format("/c \"{0}\"", settings.Command);
+
+            if (settings.UseCustomCommandExecutor)
             {
-                Process process = Process.GetProcessById((int)processInfo.dwProcessId);
-                process?.Close();
+                appFileName = settings.CustomCommandExecutor;
+                arguments = String.Format("{0} \"{1}\"", settings.CommandArgument, settings.Command);
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                Console.WriteLine("\n\n\nPress any key to continue ...");
-                Console.ReadKey();
-            }
+
+            return new RunAsContext(appFileName, arguments);
         }
     }
 }
