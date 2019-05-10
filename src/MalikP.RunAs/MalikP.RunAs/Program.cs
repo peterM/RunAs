@@ -25,7 +25,6 @@
 
 using System;
 using System.Configuration;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -64,39 +63,31 @@ namespace MalikP.RunAs
                 title = $"Impersonated command prompt - [{domain}\\{userName}]"
             };
 
-            string appFileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-            string arguments = String.Format("/c \"{0}\"", command);
+            string appFileName, arguments;
+            SetupCommand(command, closeHost, out appFileName, out arguments);
 
             ProcessInfo processInfo = new ProcessInfo();
             if (Win32Wrapper.CreateProcessWithLogonW(userName, domain, password, LogonFlags.LOGON_NETCREDENTIALS_ONLY, appFileName, arguments, 0, IntPtr.Zero, null, ref startupInfo, out processInfo))
             {
                 Win32Wrapper.CloseHandle(processInfo.hProcess);
                 Win32Wrapper.CloseHandle(processInfo.hThread);
-
-                if (closeHost)
-                {
-                    CloseHostProcess(processInfo);
-                }
             }
             else
             {
                 string errorString = Marshal.GetLastWin32Error().ToString();
                 Console.WriteLine(errorString);
+                Console.ReadKey();
             }
         }
 
-        private static void CloseHostProcess(ProcessInfo processInfo)
+        private static void SetupCommand(string command, bool closeHost, out string appFileName, out string arguments)
         {
-            try
+            appFileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            arguments = String.Format("/c \"{0}\"", command);
+            if (closeHost)
             {
-                Process process = Process.GetProcessById((int)processInfo.dwProcessId);
-                process?.Close();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                Console.WriteLine("\n\n\nPress any key to continue ...");
-                Console.ReadKey();
+                appFileName = Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\", "powershell.exe");
+                arguments = String.Format("-command \"{0}\"", command);
             }
         }
     }
