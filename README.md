@@ -12,6 +12,7 @@ This is `runas.exe /netonly .....` replacement to provide support to inject pass
 
 #### Configuration file
 Open `MalikP.RunAs.exe.config` and update `key` values:
+- `CloseHost` [True|False] - _optional_
 - `UserName`
 - `Domain`
 - `Password`
@@ -19,8 +20,9 @@ Open `MalikP.RunAs.exe.config` and update `key` values:
 
 Or run executable with arguments **(order is mandatory)**:
 
-```
+```powershell
 MalikP.RunAs.exe userName domain password "command"
+MalikP.RunAs.exe userName domain password "command" closeHost
 ```
 
 ### Planned
