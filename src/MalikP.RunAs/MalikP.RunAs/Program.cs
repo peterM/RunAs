@@ -34,40 +34,50 @@ namespace MalikP.RunAs
 {
     class Program
     {
+        private static string UserName { get; set; } = ConfigurationManager.AppSettings[nameof(UserName)];
+
+        private static string Domain { get; set; } = ConfigurationManager.AppSettings[nameof(Domain)];
+
+        private static string Password { get; set; } = ConfigurationManager.AppSettings[nameof(Password)];
+
+        private static string Command { get; set; } = ConfigurationManager.AppSettings[nameof(Command)];
+
+        private static bool UseCustomCommandExecutor { get; set; } = bool.Parse((ConfigurationManager.AppSettings[nameof(UseCustomCommandExecutor)] ?? "false"));
+
+        private static string CustomCommandExecutor { get; set; } = ConfigurationManager.AppSettings[nameof(CustomCommandExecutor)];
+
+        private static string CommandArgument { get; set; } = ConfigurationManager.AppSettings[nameof(CommandArgument)];
+
         static void Main(string[] args)
         {
-            string userName = ConfigurationManager.AppSettings["UserName"];
-            string domain = ConfigurationManager.AppSettings["Domain"];
-            string password = ConfigurationManager.AppSettings["Password"];
-            string command = ConfigurationManager.AppSettings["Command"];
-            bool closeHost = bool.Parse((ConfigurationManager.AppSettings["CloseHost"] ?? "false"));
-
             //Example: 
             // "C:\Windows\System32\dsa.msc /domain=something.local"
             if (args.Length >= 4)
             {
-                userName = args[0];
-                domain = args[1];
-                password = args[2];
-                command = args[3];
+                UserName = args[0];
+                Domain = args[1];
+                Password = args[2];
+                Command = args[3];
 
-                if (args.Length >= 5)
+                if (args.Length == 7)
                 {
-                    closeHost = bool.Parse(args[4]);
+                    UseCustomCommandExecutor = bool.Parse(args[4]);
+                    CustomCommandExecutor = args[5];
+                    CommandArgument = args[6];
                 }
             }
 
             StartupInfo startupInfo = new StartupInfo
             {
                 cb = Marshal.SizeOf(typeof(StartupInfo)),
-                title = $"Impersonated command prompt - [{domain}\\{userName}]"
+                title = $"Impersonated command prompt - [{Domain}\\{UserName}]"
             };
 
             string appFileName, arguments;
-            SetupCommand(command, closeHost, out appFileName, out arguments);
+            SetupCommand(out appFileName, out arguments);
 
             ProcessInfo processInfo = new ProcessInfo();
-            if (Win32Wrapper.CreateProcessWithLogonW(userName, domain, password, LogonFlags.LOGON_NETCREDENTIALS_ONLY, appFileName, arguments, 0, IntPtr.Zero, null, ref startupInfo, out processInfo))
+            if (Win32Wrapper.CreateProcessWithLogonW(UserName, Domain, Password, LogonFlags.LOGON_NETCREDENTIALS_ONLY, appFileName, arguments, 0, IntPtr.Zero, null, ref startupInfo, out processInfo))
             {
                 Win32Wrapper.CloseHandle(processInfo.hProcess);
                 Win32Wrapper.CloseHandle(processInfo.hThread);
@@ -76,18 +86,21 @@ namespace MalikP.RunAs
             {
                 string errorString = Marshal.GetLastWin32Error().ToString();
                 Console.WriteLine(errorString);
+
+                Console.WriteLine("\n\nPress any key to continue...");
                 Console.ReadKey();
             }
         }
 
-        private static void SetupCommand(string command, bool closeHost, out string appFileName, out string arguments)
+        private static void SetupCommand(out string appFileName, out string arguments)
         {
             appFileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-            arguments = String.Format("/c \"{0}\"", command);
-            if (closeHost)
+            arguments = String.Format("/c \"{0}\"", Command);
+
+            if (UseCustomCommandExecutor)
             {
-                appFileName = Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\", "powershell.exe");
-                arguments = String.Format("-command \"{0}\"", command);
+                appFileName = CustomCommandExecutor;
+                arguments = String.Format("{0} \"{1}\"", CommandArgument, Command);
             }
         }
     }
