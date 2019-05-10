@@ -1,4 +1,7 @@
-# MalikP. RunAs
+![](res/RunAsLogoSmaller.png)
+
+
+[![Build status](https://dev.azure.com/MalikP/RunAs/_apis/build/status/RunAs)](https://dev.azure.com/MalikP/RunAs/_build/latest?definitionId=7)
 
 This is `runas.exe /netonly .....` replacement to provide support to inject password
 
